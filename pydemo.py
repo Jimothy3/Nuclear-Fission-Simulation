@@ -20,8 +20,8 @@ running = True
 # Def: Particle is what eminates from an active uranium particle (protons/neutrons)                                                  #
 #                                                                                                                                    #
 # Method(s):                                                                                                                         #
-#   __init__  : 5-arg ctor   - defines radius, proton/neutron, vector speed, location                                                #
-#   __update__: 0-arg method - updates particle location and speed                                                                   #
+#   __init__   : 5-arg ctor   - defines radius, proton/neutron, vector speed, location                                               #
+#   __update__ : 0-arg method - updates particle location and speed                                                                  #
 ######################################################################################################################################
 class Particle:
     def __init__(self, radius, x_speed, y_speed, x, y):
@@ -60,10 +60,10 @@ class Particle:
 # Def: Uranium is the objects being statically held in a grid-style format                                                           #
 #                                                                                                                                    #
 # Method(s):                                                                                                                         #
-#   __init__            : 4-arg ctor                      - defines uranium particle. location and radius                            #
-#   __irradiate__       : 0-arg method                    - creates 1-5 random particles                                             #
-#   __update_particles__: 0-arg method                    - function to easily update the location of loose particles                #
-#   __collision__       : 2-arg method (X-Coord, Y-Coord) - Returns whether a target is touching a uranium particle                  #
+#   __init__             : 4-arg ctor                      - defines uranium particle. location and radius                           #
+#   __irradiate__        : 0-arg method                    - creates 1-5 random particles                                            #
+#   __update_particles__ : 0-arg method                    - function to easily update the location of loose particles               #
+#   __collision__        : 2-arg method (X-Coord, Y-Coord) - Returns whether a target is touching a uranium particle                 #
 ######################################################################################################################################
 class Uranium:
     def __init__(self, rad, color, x, y):
@@ -76,7 +76,8 @@ class Uranium:
     def __irradiate__(self):
         MAX_PARTICLES = 5
         num_particles = rand.randrange(1, MAX_PARTICLES)
-        self.particles = []
+        if len(self.particles) > 10:
+            self.particles = []
         for _ in range(num_particles):
             RADIUS = 2
             xspeed, yspeed = (rand.randrange(1, 10), rand.randrange(1, 10))
@@ -103,14 +104,14 @@ class Uranium:
 # Def: Grid is a 2D-array of uranium                                                                                                 #
 #                                                                                                                                    #
 # Method(s):                                                                                                                         #
-#   __init__            : 2-arg ctor   - consisting of row/col format to create a simple rectangular grid of particles.              #
-#   __update_radiation__: 0-arg method - function to easily update the location of loose particles                                   #
+#   __init__             : 2-arg ctor   - consisting of row/col format to create a simple rectangular grid of particles.             #
+#   __update_radiation__ : 0-arg method - function to easily update the location of loose particles                                  #
 ######################################################################################################################################
 class Grid:
     def __init__(self, rows, cols):
         RADIUS = 10
         COLOR = 'SkyBlue'
-        MAX_INTEGER = 25
+        MAX_INTEGER = 10
 
         if rows < 0 or cols < 0:
             raise Exception("ERROR: underflow, negative particles")
@@ -141,26 +142,37 @@ class Grid:
 ######################################################################################################################################
 #                                                     GAMEPLAY                                                                       #
 ######################################################################################################################################
-grid = Grid(5, 5)
+ROWS = 3
+COLS = 3
+BUTTON_WIDTH, BUTTON_HEIGHT = (170, 64)
+BUTTON_X, BUTTON_Y = (SCREEN_WIDTH - BUTTON_WIDTH - 50, 10)
+grid = Grid(ROWS, COLS)
 
 while running:
     for event in pg.event.get():
         if event.type == pg.QUIT:
             running = False
+        elif event.type == pg.MOUSEBUTTONDOWN:
+            mouse_x, mouse_y = event.pos
+            if pg.Rect(BUTTON_X, BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT).collidepoint(mouse_x, mouse_y):
+                for row in range(grid.rows):
+                    for col in range(grid.columns):
+                        pg.draw.circle(screen, grid.color, (grid.particles[row][col].x, grid.particles[row][col].y), grid.radius)
+                        grid.particles[row][col].__irradiate__() # spawn particles
 
     screen.fill("white")
 
-    # RENDER GAME HERE
+    # render uranium and particles
     for row in range(grid.rows):
         for col in range(grid.columns):
             pg.draw.circle(screen, grid.color, (grid.particles[row][col].x, grid.particles[row][col].y), grid.radius)
-            grid.particles[row][col].__irradiate__()
+            # grid.particles[row][col].__irradiate__() # spawn particles
 
             for p in range(len(grid.particles[row][col].particles)):
                 pg.draw.circle(screen, grid.particles[row][col].particles[p].color, 
-                                (grid.particles[row][col].particles[p].x, grid.particles[row][col].particles[p].y),
-                                grid.radius - 5)
-            
+                                (grid.particles[row][col].particles[p].x, grid.particles[row][col].particles[p].y), grid.radius - 5)
+    
+    # update particles so they move
     for row in range(grid.rows):
         for col in range(grid.columns):
             grid.__update_radiation__()
@@ -168,16 +180,19 @@ while running:
                 pg.draw.circle(screen, grid.particles[row][col].particles[p].color, 
                                (grid.particles[row][col].particles[p].x, grid.particles[row][col].particles[p].y),
                                grid.radius - 5)
-                t.sleep(0.0001)
+                t.sleep(0.0001) # arbitrary sleep time to slow animation slightly
     
-
+    # Button to Radiate
+    pg.draw.rect(screen, 'IndianRed', (BUTTON_X, BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT))
     if pg.font:
         font = pg.font.Font(None, 64)
-        text = font.render("", True, (10, 10, 10))
-        textpos = text.get_rect(centerx=350, y=10)
+        text = font.render("Radiate", True, (10, 10, 10))
+        textpos = text.get_rect(x=BUTTON_X + 2, y=BUTTON_Y + 10)
         screen.blit(text, textpos)
-    pg.display.flip()
 
+
+
+    pg.display.flip()
     clock.tick(60)
 
 pg.quit()
