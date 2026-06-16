@@ -1,9 +1,9 @@
 # Name: James Holland
 # Programming Assignment: Nuclear Fission Simulator
 # Date: June 15, 2026
+import random as rand
 import pygame as pg
-import random
-import time as t
+import time   as t
 
 if not pg.font:
     print("Warning: fonts disabled")
@@ -17,13 +17,12 @@ running = True
 ######################################################################################################################################
 #                                                     PARTICLE                                                                       #
 ######################################################################################################################################
-###############
-# Def: Particle is what eminates from a starting uranium particle (protons/neutrons)
-# 
-# Method(s):
-#   __init__: 5-arg ctor - defines radius, proton/neutron, vector speed, location
-#   __update__: empty-arg method - updates particle location and speed
-###############
+# Def: Particle is what eminates from an active uranium particle (protons/neutrons)                                                  #
+#                                                                                                                                    #
+# Method(s):                                                                                                                         #
+#   __init__  : 5-arg ctor   - defines radius, proton/neutron, vector speed, location                                                #
+#   __update__: 0-arg method - updates particle location and speed                                                                   #
+######################################################################################################################################
 class Particle:
     def __init__(self, radius, x_speed, y_speed, x, y):
         self.radius = radius
@@ -36,7 +35,7 @@ class Particle:
         start_val = 0
         stop_val = 20 # must not be zero
 
-        picker = random.randrange(start_val, stop_val, 1)
+        picker = rand.randrange(start_val, stop_val, 1)
 
         if picker < 10:
             self.type = 'Proton'
@@ -54,17 +53,18 @@ class Particle:
         self.y += self.y_speed
         self.x_speed -= 0.1
         self.y_speed -= 0.1
+
 ######################################################################################################################################
 #                                                      URANIUM                                                                       #
 ######################################################################################################################################
-###############
-# Def: Uranium is the objects being statically held in a grid-style format
-# 
-# Method(s):
-#   __init__: 4-arg ctor - defines uranium particle. location and radius
-#   __irradiate__: empty-arg method - creates 1-5 random particles
-#   __update_particles__: Empty-arg method - function to easily update the location of loose particles
-###############
+# Def: Uranium is the objects being statically held in a grid-style format                                                           #
+#                                                                                                                                    #
+# Method(s):                                                                                                                         #
+#   __init__            : 4-arg ctor                      - defines uranium particle. location and radius                            #
+#   __irradiate__       : 0-arg method                    - creates 1-5 random particles                                             #
+#   __update_particles__: 0-arg method                    - function to easily update the location of loose particles                #
+#   __collision__       : 2-arg method (X-Coord, Y-Coord) - Returns whether a target is touching a uranium particle                  #
+######################################################################################################################################
 class Uranium:
     def __init__(self, rad, color, x, y):
         self.radius = rad
@@ -75,29 +75,37 @@ class Uranium:
 
     def __irradiate__(self):
         MAX_PARTICLES = 5
-        num_particles = random.randrange(1, MAX_PARTICLES)
+        num_particles = rand.randrange(1, MAX_PARTICLES)
         self.particles = []
         for _ in range(num_particles):
             RADIUS = 2
-            xspeed, yspeed = (random.randrange(1, 10), random.randrange(1, 10))
+            xspeed, yspeed = (rand.randrange(1, 10), rand.randrange(1, 10))
             self.particles.append(Particle(RADIUS, xspeed, yspeed, self.x, self.y))
 
     def __update_particles__(self):
         for i in range(len(self.particles)):
             self.particles[i].__update__()
     
+    def __collision__(self, x, y):
+        x_touching = False
+        y_touching = False
 
+        if x >= self.x - self.radius and x <= self.x + self.radius:
+            x_touching = True
+        if y >= self.y - self.radius and y <= self.y + self.radius:
+            y_touching = True
 
+        return x_touching and y_touching
+        
 ######################################################################################################################################
 #                                                         GRID                                                                       #
 ######################################################################################################################################
-###############
-# Def: Grid is the uranium grid
-# 
-# Method(s):
-#   __init__: 2-arg ctor consisting of row/col format to create a simple rectangular grid of particles.
-#   __update_radiation__: Empty-arg method - function to easily update the location of loose particles
-###############
+# Def: Grid is a 2D-array of uranium                                                                                                 #
+#                                                                                                                                    #
+# Method(s):                                                                                                                         #
+#   __init__            : 2-arg ctor   - consisting of row/col format to create a simple rectangular grid of particles.              #
+#   __update_radiation__: 0-arg method - function to easily update the location of loose particles                                   #
+######################################################################################################################################
 class Grid:
     def __init__(self, rows, cols):
         RADIUS = 10
@@ -108,7 +116,6 @@ class Grid:
             raise Exception("ERROR: underflow, negative particles")
         if rows >= MAX_INTEGER or cols >= MAX_INTEGER:
             raise Exception("ERROR: overflow, too many particles")
-        
         
         self.radius = RADIUS
         self.color = COLOR
@@ -130,7 +137,6 @@ class Grid:
         for row in range(self.rows):
             for col in range(self.columns):
                 self.particles[row][col].__update_particles__()
-
 
 ######################################################################################################################################
 #                                                     GAMEPLAY                                                                       #
