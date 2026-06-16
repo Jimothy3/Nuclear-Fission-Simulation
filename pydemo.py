@@ -14,6 +14,9 @@ screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 clock = pg.time.Clock()
 running = True
 
+######################################################################################################################################
+#                                                     PARTICLE                                                                       #
+######################################################################################################################################
 ###############
 # Def: Particle is what eminates from a starting uranium particle (protons/neutrons)
 # 
@@ -51,20 +54,23 @@ class Particle:
         self.y += self.y_speed
         self.x_speed -= 0.1
         self.y_speed -= 0.1
-
+######################################################################################################################################
+#                                                      URANIUM                                                                       #
+######################################################################################################################################
 ###############
 # Def: Uranium is the objects being statically held in a grid-style format
 # 
 # Method(s):
 #   __init__: 4-arg ctor - defines uranium particle. location and radius
 #   __irradiate__: empty-arg method - creates 1-5 random particles
+#   __update_particles__: Empty-arg method - function to easily update the location of loose particles
 ###############
 class Uranium:
     def __init__(self, rad, color, x, y):
         self.radius = rad
         self.color = color
-        self.x = x + 200
-        self.y = y + 50
+        self.x = x
+        self.y = y
         self.particles = []
 
     def __irradiate__(self):
@@ -79,12 +85,18 @@ class Uranium:
     def __update_particles__(self):
         for i in range(len(self.particles)):
             self.particles[i].__update__()
+    
 
+
+######################################################################################################################################
+#                                                         GRID                                                                       #
+######################################################################################################################################
 ###############
 # Def: Grid is the uranium grid
 # 
 # Method(s):
 #   __init__: 2-arg ctor consisting of row/col format to create a simple rectangular grid of particles.
+#   __update_radiation__: Empty-arg method - function to easily update the location of loose particles
 ###############
 class Grid:
     def __init__(self, rows, cols):
@@ -121,13 +133,10 @@ class Grid:
 
 
 ######################################################################################################################################
-#                                              SIMULATION INSTANTIATION                                                              #
-######################################################################################################################################
-grid = Grid(10, 10)
-            
-######################################################################################################################################
 #                                                     GAMEPLAY                                                                       #
 ######################################################################################################################################
+grid = Grid(5, 5)
+
 while running:
     for event in pg.event.get():
         if event.type == pg.QUIT:
