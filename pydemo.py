@@ -3,12 +3,13 @@
 # Date: June 15, 2026
 import random as rand
 import pygame as pg
-import time   as t
 
 if not pg.font:
     print("Warning: fonts disabled")
 
 pg.init()
+if pg.font:
+    font = pg.font.Font(None, 64)
 SCREEN_WIDTH, SCREEN_HEIGHT = (1280, 720)
 screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 clock = pg.time.Clock()
@@ -35,7 +36,6 @@ class Particle:
         stop_val = 20 # must not be zero
 
         picker = rand.randrange(start_val, stop_val, 1)
-        self.key = hash(x * y * x_speed * y_speed * picker) # identification
 
         if picker < (start_val + stop_val) / 2:
             self.type = 'Proton'
@@ -197,7 +197,6 @@ while running:
     # update particles so they move
     for row in range(grid.rows):
         for col in range(grid.columns):
-            grid.__update_radiation__()
             for p in range(len(grid.particles[row][col].particles)):
                 pg.draw.circle(screen, grid.particles[row][col].particles[p].color, 
                                (grid.particles[row][col].particles[p].x, grid.particles[row][col].particles[p].y),
@@ -208,11 +207,11 @@ while running:
                                    grid.particles[row][col].particles[p].y, 
                                    grid.particles[row][col].x, grid.particles[row][col].y)
 
+    grid.__update_radiation__()
 
     # Button to Radiate
     pg.draw.rect(screen, 'IndianRed', (BUTTON_RADIATE_X, BUTTON_RADIATE_Y, BUTTON_WIDTH, BUTTON_HEIGHT))
     if pg.font:
-        font = pg.font.Font(None, 64)
         text = font.render("Radiate", True, (10, 10, 10))
         textpos = text.get_rect(x=BUTTON_RADIATE_X + 2, y=BUTTON_RADIATE_Y + 10)
         screen.blit(text, textpos)
@@ -220,7 +219,6 @@ while running:
     # Button to Reset
     pg.draw.rect(screen, 'Orange', (BUTTON_CLEAR_X, BUTTON_CLEAR_Y, BUTTON_WIDTH, BUTTON_HEIGHT))
     if pg.font:
-        font = pg.font.Font(None, 64)
         text = font.render("Clear", True, (10, 10, 10))
         textpos = text.get_rect(x=BUTTON_CLEAR_X + 2, y=BUTTON_CLEAR_Y + 10)
         screen.blit(text, textpos)
