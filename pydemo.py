@@ -111,11 +111,13 @@ class Uranium:
 # Def: Grid is a 2D-array of uranium                                                                                                 #
 #                                                                                                                                    #
 # Method(s):                                                                                                                         #
-#   __init__         : 2-arg ctor   - consisting of row/col format to create a simple rectangular grid of particles.                 #
-#   update_radiation : 0-arg method - function to easily update the location of loose particles                                      #
-#   collision        : 4-arg method - function to detect collisions and automatically cause chain-reaction                           #
-#   irradiate_cell   : 1-arg method - function to tell a uranium atom to shoot out some particles                                    #
-#   clear_fission    : 0-arg method - function to reset all fission (all particle lists set to [])                                   #
+#   __init__           : 2-arg ctor   - consisting of row/col format to create a simple rectangular grid of particles.               #
+#   update_radiation   : 0-arg method - function to easily update the location of loose particles                                    #
+#   collision          : 4-arg method - function to detect collisions and automatically cause chain-reaction                         #
+#   irradiate_cell     : 1-arg method - function to tell a uranium atom to shoot out some particles                                  #
+#   clear_fission      : 0-arg method - function to reset all fission (all particle lists set to [])                                 #
+#   num_particles      : 0-arg method - function that returns total number of particles                                              #
+#   remove_n_particles : 1-arg method - function that removes n particles from the simulation (fixes lag problems)                   #
 ######################################################################################################################################
 class Grid:
     def __init__(self, rows, cols):
@@ -177,6 +179,27 @@ class Grid:
         for row in range(self.rows):
             for col in range(self.columns):
                 self.atoms[row][col].clear_particles()
+    
+    def num_particles(self):
+        count = 0
+        for row in range(self.rows):
+            for col in range(self.columns):
+                count += len(self.atoms[row][col].particles)
+        
+        return count
+    
+    def remove_n_particles(self, n):
+        if self.num_particles() < n:
+            raise Exception("ERROR: Removing too many particles")
+        while n > 0:
+            for row in range(self.rows):
+                for col in range(self.columns):
+                    atom = 0
+                    while n > 0 and atom < len(self.atoms[row][col].particles):
+                        if n > 0:
+                            del self.atoms[row][col].particles[atom]
+                            n -= 1
+                        atom += 1
 
 ######################################################################################################################################
 #                                                     GAMEPLAY                                                                       #
@@ -184,15 +207,22 @@ class Grid:
 BUTTON_WIDTH, BUTTON_HEIGHT = (170, 64)
 BUTTON_RADIATE_X, BUTTON_RADIATE_Y = (SCREEN_WIDTH - BUTTON_WIDTH - 50, 10)
 BUTTON_CLEAR_X, BUTTON_CLEAR_Y = (SCREEN_WIDTH - BUTTON_WIDTH - 50, 84)
+BUTTON_BACK_X, BUTTON_BACK_Y = (SCREEN_WIDTH - BUTTON_WIDTH - 50, 158)
+BUTTON_ICON_X, BUTTON_ICON_Y = (SCREEN_WIDTH - 75, 232)
 BUTTON_PLAY_X, BUTTON_PLAY_Y = (SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2)
 BUTTON_EXIT_X, BUTTON_EXIT_Y = (BUTTON_PLAY_X * 2 + 50, BUTTON_PLAY_Y)
 TITLE_NAME_X, TITLE_NAME_Y = (SCREEN_WIDTH / 2, 10)
+
 ROWS = 20
 COLS = 20
+PARTICLE_CAP = 1000
+PARTICLE_ABSORPTION = PARTICLE_CAP / 4
+
 grid = Grid(ROWS, COLS)
 
 TITLE_SCREEN = True
 GAMEPLAY_SCREEN = False
+HIDE_ICONS = False
 
 while running:
     for event in pg.event.get():
@@ -200,14 +230,27 @@ while running:
             running = False
         elif event.type == pg.MOUSEBUTTONDOWN:
             mouse_x, mouse_y = event.pos
+            # radiate atom button
             if GAMEPLAY_SCREEN and pg.Rect(BUTTON_RADIATE_X, BUTTON_RADIATE_Y, BUTTON_WIDTH, BUTTON_HEIGHT).collidepoint(mouse_x, mouse_y):
                 for _ in range(15):
                     grid.atoms[int(ROWS / 2)][int(COLS / 2)].irradiate()
+            # clear particles button
             elif GAMEPLAY_SCREEN and pg.Rect(BUTTON_CLEAR_X, BUTTON_CLEAR_Y, BUTTON_WIDTH, BUTTON_HEIGHT).collidepoint(mouse_x, mouse_y):
                 grid.clear_fission()
+            # back to menu button
+            elif GAMEPLAY_SCREEN and pg.Rect(BUTTON_BACK_X, BUTTON_BACK_Y, BUTTON_WIDTH, BUTTON_HEIGHT).collidepoint(mouse_x, mouse_y):
+                TITLE_SCREEN = True
+                GAMEPLAY_SCREEN = False
+                grid.clear_fission()
+            # back to menu button
+            elif GAMEPLAY_SCREEN and pg.Rect(BUTTON_ICON_X, BUTTON_ICON_Y, BUTTON_HEIGHT, BUTTON_HEIGHT).collidepoint(mouse_x, mouse_y):
+                if HIDE_ICONS: HIDE_ICONS = False
+                else: HIDE_ICONS = True
+            # play button
             elif TITLE_SCREEN and pg.Rect(BUTTON_PLAY_X, BUTTON_PLAY_Y, BUTTON_WIDTH * 2, BUTTON_HEIGHT * 2).collidepoint(mouse_x, mouse_y):
                 TITLE_SCREEN = False
                 GAMEPLAY_SCREEN = True
+            # exit button
             elif TITLE_SCREEN and pg.Rect(BUTTON_EXIT_X, BUTTON_EXIT_Y, BUTTON_WIDTH * 2, BUTTON_HEIGHT * 2).collidepoint(mouse_x, mouse_y):
                 running = False
 
@@ -229,7 +272,6 @@ while running:
             textpos = text.get_rect(centerx=BUTTON_EXIT_X * 1.25, y=BUTTON_EXIT_Y * 1.1)
             screen.blit(text, textpos)
         
-
     elif GAMEPLAY_SCREEN:
         screen.fill("white")
         # render uranium and particles
@@ -262,34 +304,36 @@ while running:
 
         grid.update_radiation()
 
-        '''
-        num_rods = int(rows / 2)
-        thickness = 5
-        length = 300
-        y = 0
-        x = thickness + 200
-        '''
-        NUM_RODS = int(row / 2)
-        THICKNESS = 5
-        LENGTH = 300
-        X = THICKNESS
-        for i in range(NUM_RODS):
-            pg.draw.rect(screen, 'Gray', (X, 0,THICKNESS, LENGTH))
-            X += 100
-        X = 0
+        if grid.num_particles() > PARTICLE_CAP:
+            grid.remove_n_particles(PARTICLE_ABSORPTION)
 
-        # Button to Radiate
-        pg.draw.rect(screen, 'IndianRed', (BUTTON_RADIATE_X, BUTTON_RADIATE_Y, BUTTON_WIDTH, BUTTON_HEIGHT))
-        if pg.font:
-            text = font.render("Radiate", True, (10, 10, 10))
-            textpos = text.get_rect(x=BUTTON_RADIATE_X + 2, y=BUTTON_RADIATE_Y + 10)
-            screen.blit(text, textpos)
+        if not HIDE_ICONS:
+            # Button to Radiate
+            pg.draw.rect(screen, 'IndianRed', (BUTTON_RADIATE_X, BUTTON_RADIATE_Y, BUTTON_WIDTH, BUTTON_HEIGHT))
+            if pg.font:
+                text = font.render("Radiate", True, (10, 10, 10))
+                textpos = text.get_rect(x=BUTTON_RADIATE_X + 2, y=BUTTON_RADIATE_Y + 10)
+                screen.blit(text, textpos)
 
-        # Button to Reset
-        pg.draw.rect(screen, 'Orange', (BUTTON_CLEAR_X, BUTTON_CLEAR_Y, BUTTON_WIDTH, BUTTON_HEIGHT))
+            # Button to Reset
+            pg.draw.rect(screen, 'Orange', (BUTTON_CLEAR_X, BUTTON_CLEAR_Y, BUTTON_WIDTH, BUTTON_HEIGHT))
+            if pg.font:
+                text = font.render("Clear", True, (10, 10, 10))
+                textpos = text.get_rect(x=BUTTON_CLEAR_X + 2, y=BUTTON_CLEAR_Y + 10)
+                screen.blit(text, textpos)
+
+            # Button to go Back to Menu
+            pg.draw.rect(screen, 'Beige', (BUTTON_BACK_X, BUTTON_BACK_Y, BUTTON_WIDTH, BUTTON_HEIGHT))
+            if pg.font:
+                text = font.render("Back", True, (10, 10, 10))
+                textpos = text.get_rect(x=BUTTON_BACK_X + 2, y=BUTTON_BACK_Y + 10)
+                screen.blit(text, textpos)
+            
+        # Button to hide icons
+        pg.draw.rect(screen, 'Red', (BUTTON_ICON_X, BUTTON_ICON_Y, BUTTON_HEIGHT, BUTTON_HEIGHT))
         if pg.font:
-            text = font.render("Clear", True, (10, 10, 10))
-            textpos = text.get_rect(x=BUTTON_CLEAR_X + 2, y=BUTTON_CLEAR_Y + 10)
+            text = font.render("H", True, (10, 10, 10))
+            textpos = text.get_rect(x=BUTTON_ICON_X + 15, y=BUTTON_ICON_Y + 10)
             screen.blit(text, textpos)
 
     pg.display.flip()
