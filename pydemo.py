@@ -181,12 +181,18 @@ class Grid:
 ######################################################################################################################################
 #                                                     GAMEPLAY                                                                       #
 ######################################################################################################################################
-ROWS = 30
-COLS = 30
 BUTTON_WIDTH, BUTTON_HEIGHT = (170, 64)
 BUTTON_RADIATE_X, BUTTON_RADIATE_Y = (SCREEN_WIDTH - BUTTON_WIDTH - 50, 10)
 BUTTON_CLEAR_X, BUTTON_CLEAR_Y = (SCREEN_WIDTH - BUTTON_WIDTH - 50, 84)
+BUTTON_PLAY_X, BUTTON_PLAY_Y = (SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2)
+BUTTON_EXIT_X, BUTTON_EXIT_Y = (BUTTON_PLAY_X * 2 + 50, BUTTON_PLAY_Y)
+TITLE_NAME_X, TITLE_NAME_Y = (SCREEN_WIDTH / 2, 10)
+ROWS = 20
+COLS = 20
 grid = Grid(ROWS, COLS)
+
+TITLE_SCREEN = True
+GAMEPLAY_SCREEN = False
 
 while running:
     for event in pg.event.get():
@@ -194,57 +200,97 @@ while running:
             running = False
         elif event.type == pg.MOUSEBUTTONDOWN:
             mouse_x, mouse_y = event.pos
-            if pg.Rect(BUTTON_RADIATE_X, BUTTON_RADIATE_Y, BUTTON_WIDTH, BUTTON_HEIGHT).collidepoint(mouse_x, mouse_y):
+            if GAMEPLAY_SCREEN and pg.Rect(BUTTON_RADIATE_X, BUTTON_RADIATE_Y, BUTTON_WIDTH, BUTTON_HEIGHT).collidepoint(mouse_x, mouse_y):
                 for _ in range(15):
                     grid.atoms[int(ROWS / 2)][int(COLS / 2)].irradiate()
-            elif pg.Rect(BUTTON_CLEAR_X, BUTTON_CLEAR_Y, BUTTON_WIDTH, BUTTON_HEIGHT).collidepoint(mouse_x, mouse_y):
+            elif GAMEPLAY_SCREEN and pg.Rect(BUTTON_CLEAR_X, BUTTON_CLEAR_Y, BUTTON_WIDTH, BUTTON_HEIGHT).collidepoint(mouse_x, mouse_y):
                 grid.clear_fission()
+            elif TITLE_SCREEN and pg.Rect(BUTTON_PLAY_X, BUTTON_PLAY_Y, BUTTON_WIDTH * 2, BUTTON_HEIGHT * 2).collidepoint(mouse_x, mouse_y):
+                TITLE_SCREEN = False
+                GAMEPLAY_SCREEN = True
+            elif TITLE_SCREEN and pg.Rect(BUTTON_EXIT_X, BUTTON_EXIT_Y, BUTTON_WIDTH * 2, BUTTON_HEIGHT * 2).collidepoint(mouse_x, mouse_y):
+                running = False
 
-    screen.fill("white")
+    if TITLE_SCREEN:
+        screen.fill("LimeGreen")
+        pg.draw.rect(screen, 'Beige', (BUTTON_PLAY_X, BUTTON_PLAY_Y, BUTTON_WIDTH * 2, BUTTON_HEIGHT * 2))
+        pg.draw.rect(screen, 'IndianRed', (BUTTON_EXIT_X, BUTTON_EXIT_Y, BUTTON_WIDTH * 2, BUTTON_HEIGHT * 2))
+        if pg.font:
+            # title of game
+            text = font.render("Nuclear Fission Simulator", True, (10, 10, 10))
+            textpos = text.get_rect(centerx=TITLE_NAME_X, y=TITLE_NAME_Y)
+            screen.blit(text, textpos)
+            # play button
+            text = font.render("RUN SIM", True, (10, 10, 10))
+            textpos = text.get_rect(centerx=BUTTON_PLAY_X * 1.5 + 10, y=BUTTON_PLAY_Y * 1.1)
+            screen.blit(text, textpos)
+            # exit button
+            text = font.render("EXIT", True, (10, 10, 10))
+            textpos = text.get_rect(centerx=BUTTON_EXIT_X * 1.25, y=BUTTON_EXIT_Y * 1.1)
+            screen.blit(text, textpos)
+        
 
-    # render uranium and particles
-    for row in range(grid.rows):
-        for col in range(grid.columns):
-            pg.draw.circle(screen, grid.color, (grid.atoms[row][col].x, grid.atoms[row][col].y), grid.radius)
+    elif GAMEPLAY_SCREEN:
+        screen.fill("white")
+        # render uranium and particles
+        for row in range(grid.rows):
+            for col in range(grid.columns):
+                pg.draw.circle(screen, grid.color, (grid.atoms[row][col].x, grid.atoms[row][col].y), grid.radius)
 
-            for p in range(len(grid.atoms[row][col].particles)):
-                pg.draw.circle(screen, grid.atoms[row][col].particles[p].color, 
-                                (grid.atoms[row][col].particles[p].x, grid.atoms[row][col].particles[p].y), grid.radius - 5)
-                
-            # update particles so they move
-            particle_index = 0
-            while particle_index < len(grid.atoms[row][col].particles):
-                PARTICLE_TYPE = grid.atoms[row][col].particles[particle_index].type
-                PARTICLE_X = grid.atoms[row][col].particles[particle_index].x
-                PARTICLE_Y = grid.atoms[row][col].particles[particle_index].y
-                ATOM_X = grid.atoms[row][col].x
-                ATOM_Y = grid.atoms[row][col].y
+                for p in range(len(grid.atoms[row][col].particles)):
+                    pg.draw.circle(screen, grid.atoms[row][col].particles[p].color, 
+                                    (grid.atoms[row][col].particles[p].x, grid.atoms[row][col].particles[p].y), grid.radius - 5)
+                    
+                # update particles so they move
+                particle_index = 0
+                while particle_index < len(grid.atoms[row][col].particles):
+                    PARTICLE_TYPE = grid.atoms[row][col].particles[particle_index].type
+                    PARTICLE_X = grid.atoms[row][col].particles[particle_index].x
+                    PARTICLE_Y = grid.atoms[row][col].particles[particle_index].y
+                    ATOM_X = grid.atoms[row][col].x
+                    ATOM_Y = grid.atoms[row][col].y
 
-                if PARTICLE_TYPE == 'Neutron':
-                    success, row_of_target, col_of_target = grid.collision(PARTICLE_X, PARTICLE_Y, ATOM_X, ATOM_Y)
-                    if success:
-                        grid.irradiate_cell(grid.atoms[row_of_target][col_of_target])
-                        del grid.atoms[row][col].particles[particle_index] # removes neutron from the playing field
+                    if PARTICLE_TYPE == 'Neutron':
+                        success, row_of_target, col_of_target = grid.collision(PARTICLE_X, PARTICLE_Y, ATOM_X, ATOM_Y)
+                        if success:
+                            grid.irradiate_cell(grid.atoms[row_of_target][col_of_target])
+                            del grid.atoms[row][col].particles[particle_index] # removes neutron from the playing field
+                        else:
+                            particle_index += 1
                     else:
                         particle_index += 1
-                else:
-                    particle_index += 1
 
-    grid.update_radiation()
+        grid.update_radiation()
 
-    # Button to Radiate
-    pg.draw.rect(screen, 'IndianRed', (BUTTON_RADIATE_X, BUTTON_RADIATE_Y, BUTTON_WIDTH, BUTTON_HEIGHT))
-    if pg.font:
-        text = font.render("Radiate", True, (10, 10, 10))
-        textpos = text.get_rect(x=BUTTON_RADIATE_X + 2, y=BUTTON_RADIATE_Y + 10)
-        screen.blit(text, textpos)
+        '''
+        num_rods = int(rows / 2)
+        thickness = 5
+        length = 300
+        y = 0
+        x = thickness + 200
+        '''
+        NUM_RODS = int(row / 2)
+        THICKNESS = 5
+        LENGTH = 300
+        X = THICKNESS
+        for i in range(NUM_RODS):
+            pg.draw.rect(screen, 'Gray', (X, 0,THICKNESS, LENGTH))
+            X += 100
+        X = 0
 
-    # Button to Reset
-    pg.draw.rect(screen, 'Orange', (BUTTON_CLEAR_X, BUTTON_CLEAR_Y, BUTTON_WIDTH, BUTTON_HEIGHT))
-    if pg.font:
-        text = font.render("Clear", True, (10, 10, 10))
-        textpos = text.get_rect(x=BUTTON_CLEAR_X + 2, y=BUTTON_CLEAR_Y + 10)
-        screen.blit(text, textpos)
+        # Button to Radiate
+        pg.draw.rect(screen, 'IndianRed', (BUTTON_RADIATE_X, BUTTON_RADIATE_Y, BUTTON_WIDTH, BUTTON_HEIGHT))
+        if pg.font:
+            text = font.render("Radiate", True, (10, 10, 10))
+            textpos = text.get_rect(x=BUTTON_RADIATE_X + 2, y=BUTTON_RADIATE_Y + 10)
+            screen.blit(text, textpos)
+
+        # Button to Reset
+        pg.draw.rect(screen, 'Orange', (BUTTON_CLEAR_X, BUTTON_CLEAR_Y, BUTTON_WIDTH, BUTTON_HEIGHT))
+        if pg.font:
+            text = font.render("Clear", True, (10, 10, 10))
+            textpos = text.get_rect(x=BUTTON_CLEAR_X + 2, y=BUTTON_CLEAR_Y + 10)
+            screen.blit(text, textpos)
 
     pg.display.flip()
     clock.tick(60)
