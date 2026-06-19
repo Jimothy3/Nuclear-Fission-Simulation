@@ -231,18 +231,18 @@ while running:
         elif event.type == pg.MOUSEBUTTONDOWN:
             mouse_x, mouse_y = event.pos
             # radiate atom button
-            if GAMEPLAY_SCREEN and pg.Rect(BUTTON_RADIATE_X, BUTTON_RADIATE_Y, BUTTON_WIDTH, BUTTON_HEIGHT).collidepoint(mouse_x, mouse_y):
+            if GAMEPLAY_SCREEN and not HIDE_ICONS and pg.Rect(BUTTON_RADIATE_X, BUTTON_RADIATE_Y, BUTTON_WIDTH, BUTTON_HEIGHT).collidepoint(mouse_x, mouse_y):
                 for _ in range(15):
                     grid.atoms[int(ROWS / 2)][int(COLS / 2)].irradiate()
             # clear particles button
-            elif GAMEPLAY_SCREEN and pg.Rect(BUTTON_CLEAR_X, BUTTON_CLEAR_Y, BUTTON_WIDTH, BUTTON_HEIGHT).collidepoint(mouse_x, mouse_y):
+            elif GAMEPLAY_SCREEN and not HIDE_ICONS and pg.Rect(BUTTON_CLEAR_X, BUTTON_CLEAR_Y, BUTTON_WIDTH, BUTTON_HEIGHT).collidepoint(mouse_x, mouse_y):
                 grid.clear_fission()
             # back to menu button
-            elif GAMEPLAY_SCREEN and pg.Rect(BUTTON_BACK_X, BUTTON_BACK_Y, BUTTON_WIDTH, BUTTON_HEIGHT).collidepoint(mouse_x, mouse_y):
+            elif GAMEPLAY_SCREEN and not HIDE_ICONS and pg.Rect(BUTTON_BACK_X, BUTTON_BACK_Y, BUTTON_WIDTH, BUTTON_HEIGHT).collidepoint(mouse_x, mouse_y):
                 TITLE_SCREEN = True
                 GAMEPLAY_SCREEN = False
                 grid.clear_fission()
-            # back to menu button
+            # hide/show icons button
             elif GAMEPLAY_SCREEN and pg.Rect(BUTTON_ICON_X, BUTTON_ICON_Y, BUTTON_HEIGHT, BUTTON_HEIGHT).collidepoint(mouse_x, mouse_y):
                 if HIDE_ICONS: HIDE_ICONS = False
                 else: HIDE_ICONS = True
