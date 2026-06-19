@@ -205,12 +205,13 @@ class Grid:
 #                                                     GAMEPLAY                                                                       #
 ######################################################################################################################################
 BUTTON_WIDTH, BUTTON_HEIGHT = (170, 64)
-BUTTON_RADIATE_X, BUTTON_RADIATE_Y = (SCREEN_WIDTH - BUTTON_WIDTH - 50, 10)
+BUTTON_BACK_X, BUTTON_BACK_Y = (SCREEN_WIDTH - BUTTON_WIDTH - 50, 10)
 BUTTON_CLEAR_X, BUTTON_CLEAR_Y = (SCREEN_WIDTH - BUTTON_WIDTH - 50, 84)
-BUTTON_BACK_X, BUTTON_BACK_Y = (SCREEN_WIDTH - BUTTON_WIDTH - 50, 158)
+BUTTON_RADIATE_X, BUTTON_RADIATE_Y = (SCREEN_WIDTH - BUTTON_WIDTH - 50, 158)
 BUTTON_ICON_X, BUTTON_ICON_Y = (SCREEN_WIDTH - 75, 232)
 BUTTON_PLAY_X, BUTTON_PLAY_Y = (SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2)
-BUTTON_EXIT_X, BUTTON_EXIT_Y = (BUTTON_PLAY_X * 2 + 50, BUTTON_PLAY_Y)
+BUTTON_SETTINGS_X, BUTTON_SETTINGS_Y = (BUTTON_PLAY_X * 2 + 50, BUTTON_PLAY_Y)
+BUTTON_EXIT_X, BUTTON_EXIT_Y = (SCREEN_WIDTH / 2, BUTTON_PLAY_Y * 1.5)
 TITLE_NAME_X, TITLE_NAME_Y = (SCREEN_WIDTH / 2, 10)
 
 ROWS = 20
@@ -222,6 +223,7 @@ grid = Grid(ROWS, COLS)
 
 TITLE_SCREEN = True
 GAMEPLAY_SCREEN = False
+SETTINGS_SCREEN = False
 HIDE_ICONS = False
 
 while running:
@@ -238,9 +240,11 @@ while running:
             elif GAMEPLAY_SCREEN and not HIDE_ICONS and pg.Rect(BUTTON_CLEAR_X, BUTTON_CLEAR_Y, BUTTON_WIDTH, BUTTON_HEIGHT).collidepoint(mouse_x, mouse_y):
                 grid.clear_fission()
             # back to menu button
-            elif GAMEPLAY_SCREEN and not HIDE_ICONS and pg.Rect(BUTTON_BACK_X, BUTTON_BACK_Y, BUTTON_WIDTH, BUTTON_HEIGHT).collidepoint(mouse_x, mouse_y):
+            elif (GAMEPLAY_SCREEN or SETTINGS_SCREEN) and not HIDE_ICONS and pg.Rect(
+                BUTTON_BACK_X, BUTTON_BACK_Y, BUTTON_WIDTH, BUTTON_HEIGHT).collidepoint(mouse_x, mouse_y):
                 TITLE_SCREEN = True
                 GAMEPLAY_SCREEN = False
+                SETTINGS_SCREEN = False
                 grid.clear_fission()
             # hide/show icons button
             elif GAMEPLAY_SCREEN and pg.Rect(BUTTON_ICON_X, BUTTON_ICON_Y, BUTTON_HEIGHT, BUTTON_HEIGHT).collidepoint(mouse_x, mouse_y):
@@ -253,11 +257,16 @@ while running:
             # exit button
             elif TITLE_SCREEN and pg.Rect(BUTTON_EXIT_X, BUTTON_EXIT_Y, BUTTON_WIDTH * 2, BUTTON_HEIGHT * 2).collidepoint(mouse_x, mouse_y):
                 running = False
+            # settings button
+            elif TITLE_SCREEN and pg.Rect(BUTTON_SETTINGS_X, BUTTON_SETTINGS_Y, BUTTON_WIDTH * 2, BUTTON_HEIGHT * 2).collidepoint(mouse_x, mouse_y):
+                SETTINGS_SCREEN = True
+                TITLE_SCREEN = False
 
     if TITLE_SCREEN:
         screen.fill("LimeGreen")
         pg.draw.rect(screen, 'Beige', (BUTTON_PLAY_X, BUTTON_PLAY_Y, BUTTON_WIDTH * 2, BUTTON_HEIGHT * 2))
-        pg.draw.rect(screen, 'IndianRed', (BUTTON_EXIT_X, BUTTON_EXIT_Y, BUTTON_WIDTH * 2, BUTTON_HEIGHT * 2))
+        pg.draw.rect(screen, 'SlateGray', (BUTTON_SETTINGS_X, BUTTON_SETTINGS_Y, BUTTON_WIDTH * 2, BUTTON_HEIGHT * 2))
+        pg.draw.rect(screen, 'IndianRed', (BUTTON_EXIT_X * 0.80, BUTTON_EXIT_Y, BUTTON_WIDTH * 2, BUTTON_HEIGHT * 2))
         if pg.font:
             # title of game
             text = font.render("Nuclear Fission Simulator", True, (10, 10, 10))
@@ -269,9 +278,21 @@ while running:
             screen.blit(text, textpos)
             # exit button
             text = font.render("EXIT", True, (10, 10, 10))
-            textpos = text.get_rect(centerx=BUTTON_EXIT_X * 1.25, y=BUTTON_EXIT_Y * 1.1)
+            textpos = text.get_rect(centerx=BUTTON_EXIT_X + 43, y=BUTTON_EXIT_Y * 1.08)
             screen.blit(text, textpos)
-        
+            # settings button
+            text = font.render("SETTINGS", True, (10, 10, 10))
+            textpos = text.get_rect(centerx=BUTTON_SETTINGS_X * 1.25, y=BUTTON_SETTINGS_Y * 1.1)
+            screen.blit(text, textpos)
+    elif SETTINGS_SCREEN:
+        screen.fill("SlateGray")
+        # Button to go Back to Menu
+        pg.draw.rect(screen, 'Gray', (BUTTON_BACK_X, BUTTON_BACK_Y, BUTTON_WIDTH, BUTTON_HEIGHT))
+        if pg.font:
+                text = font.render("Back", True, (10, 10, 10))
+                textpos = text.get_rect(x=BUTTON_BACK_X + 2, y=BUTTON_BACK_Y + 10)
+                screen.blit(text, textpos)
+
     elif GAMEPLAY_SCREEN:
         screen.fill("white")
         # render uranium and particles
